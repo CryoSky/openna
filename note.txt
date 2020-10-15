@@ -1,0 +1,7 @@
+temp = temp[temp['group'].isin(['P', 'S', 'B'])] # select based on whether the value is in one column
+
+
+temp['group'] = temp['name'].replace(CG) # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html dict-like `to_replace`
+
+
+sel = temp.loc[(temp['name'] == "O3\'") & (temp['chainID'] == c), "resSeq"] # pandas.DataFrame.loc Access a group of rows and columns by label(s) or a boolean array. Output two columns, first column is the index of the selected line, the second is the corresponding of the resseq (column labels specified). 
