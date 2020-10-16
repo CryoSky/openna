@@ -318,7 +318,7 @@ class RNA(object):
         self.atoms.loc[:, 'type'] = self.atoms['name']
         # print(self.atoms.columns)
         # Initialize the system from the pdb
-        self.DNAtype = dna_type
+        self.na_type = na_type
         self.parseConfigurationFile()
         self.computeTopology(temp_name=temp_name)
         self.pdb_file = pdb_file

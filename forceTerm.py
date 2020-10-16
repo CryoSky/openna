@@ -24,6 +24,9 @@ class Force():
         # Define the interaction pairs
         self.defineInteraction()
 
+    #Called when an attribute lookup has not found the attribute in the usual places 
+    #(i.e. it is not an instance attribute nor is it found in the class tree for self). 
+    # name is the attribute name. This method should return the (computed) attribute value or raise an AttributeError exception.
     def __getattr__(self, attr):
         if attr in self.__dict__:
             return getattr(self, attr)
@@ -76,9 +79,9 @@ class Backbone(Force, simtk.openmm.CustomBondForce):
 
 class Angle(Force, simtk.openmm.HarmonicAngleForce):
 
-    def __init__(self, dna, force_group=7):
+    def __init__(self, nucleic, force_group=7):
         self.force_group = force_group
-        super().__init__(dna)
+        super().__init__(nucleic)
 
     def reset(self):
         angleForce = simtk.openmm.HarmonicAngleForce()
@@ -87,7 +90,7 @@ class Angle(Force, simtk.openmm.HarmonicAngleForce):
         self.force = angleForce
 
     def defineInteraction(self):
-        for i, a in self.dna.angles.iterrows():
+        for i, a in self.nucleic.angles.iterrows():
             parameters = [a['t0'] * _af,
                           a['epsilon'] * 2]
             self.force.addAngle(int(a['aai']), int(a['aaj']), int(a['aak']), *parameters)
