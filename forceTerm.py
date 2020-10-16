@@ -78,8 +78,7 @@ class Backbone(Force, simtk.openmm.CustomBondForce):
             self.force.addBond(int(b['aai']), int(b['aaj']), parameters)
 
 class Angle(Force, simtk.openmm.HarmonicAngleForce):
-
-    def __init__(self, nucleic, force_group=7):
+    def __init__(self, nucleic, force_group=2):
         self.force_group = force_group
         super().__init__(nucleic)
 
