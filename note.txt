@@ -5,3 +5,5 @@ temp['group'] = temp['name'].replace(CG) # https://pandas.pydata.org/pandas-docs
 
 
 sel = temp.loc[(temp['name'] == "O3\'") & (temp['chainID'] == c), "resSeq"] # pandas.DataFrame.loc Access a group of rows and columns by label(s) or a boolean array. Output two columns, first column is the index of the selected line, the second is the corresponding of the resseq (column labels specified). 
+
+Sorry for taking a while to get to this. I've been debugging your script, and it appears to be a problem in the definition of your CustomBondForce: (1-(r/d0)^6)/(1-(r/d0)^12). If r is exactly equal to d0, that turns into 0/0 = nan. As for why you only see it on the GPU, that's just because the Reference and CPU platforms compute the force in double precision, which makes the condition r=d0 far less likely to occur. If I tell CUDA to use double precision mode, then it runs without error too.

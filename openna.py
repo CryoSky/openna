@@ -176,7 +176,7 @@ class RNA(object):
         # Assign main sections to variables
         self.particle_definition = self.config['Particles']
         self.bond_definition = self.config['Bonds']
-        #self.angle_definition = self.config['Harmonic Angles']
+        self.angle_definition = self.config['Angles']
         #self.dihedral_definition = self.config['Dihedrals']
         #self.stacking_definition = self.config['Base Stackings']
         #self.pair_definition = self.config['Base Pairs']
@@ -250,6 +250,7 @@ class RNA(object):
         # Select ADNA bond definitions
 
         bond_types = self.bond_definition[self.bond_definition['nucleic'] == na_type]
+        angle_types = self.angle_definition[self.angle_definition['nucleic'] == na_type]
         # print(bond_types)
         # print(index)
         # Make a table with bonds
@@ -272,6 +273,34 @@ class RNA(object):
             x1 = self.template_atoms.loc[self.bonds['aai']][['x', 'y', 'z']]
             x2 = self.template_atoms.loc[self.bonds['aaj']][['x', 'y', 'z']]
             self.bonds['r0'] = np.diag(sdist.cdist(x1, x2))
+
+        # Make a table with angles
+        data = []
+        base = self.atoms['resname'].str[1:2]
+        for i, ftype in angle_types.iterrows():
+            # if ftype.name != 37:
+            #    continue
+            # print(bond_type)
+            ai = ftype['i']
+            aj = ftype['j']
+            ak = ftype['k']
+            s1 = ftype['s1']
+            s2 = ftype['s2']
+            b1 = ftype['Base1']
+            b2 = ftype['Base2']
+            sb = ftype['sB']
+            for c, r in cr_list:
+                # print(ftype)
+                k1 = (c, r, ai)
+                k2 = (c, r + s1, aj)
+                k3 = (c, r + s2, ak)
+                k4 = (c, r + sb, 'S')
+                if k1 in index and k2 in index and k3 in index and k4 in index:
+                    if b1 == '*' or base[index[k1]] == b1:
+                        if b2 == '*' or base[index[k4]] == b2:
+                            data += [[i, index[k1], index[k2], index[k3], index[k4], sb]]
+        data = pandas.DataFrame(data, columns=['name', 'aai', 'aaj', 'aak', 'aax', 'sB'])
+        self.angles = data.merge(angle_types, left_on='name', right_index=True)
 
 # @ symbol in Python https://docs.python.org/3/reference/compound_stmts.html#index-30
 # https://docs.python.org/3/library/functions.html#staticmethod
