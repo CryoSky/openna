@@ -6,7 +6,7 @@ All code are written in Python3.
 """
 
 __author__ = 'Shikai Jin'
-__version__ = '0.0.1'
+__version__ = '0.1.0'
 __date__ = "Oct-14-2020"
 
 import simtk.openmm.app
