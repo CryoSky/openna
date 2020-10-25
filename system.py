@@ -57,7 +57,7 @@ class System(simtk.openmm.System):
             assert len(self.getForces()) <= 1, 'Not all the forces were removed'
 
     def addforces(self, verbose=False):
-        """ Adds all DNA forces"""
+        """ Adds all forces"""
         self.addForce(force)
         self.forces.update({force_name: force})
 

@@ -4,6 +4,7 @@
 import simtk.openmm.app
 import simtk.openmm
 import simtk.unit as unit
+import numpy as np
 
 _ef = 1 * unit.kilocalorie / unit.kilojoule  # energy scaling factor
 _df = 1 * unit.angstrom / unit.nanometer  # distance scaling factor
@@ -97,9 +98,9 @@ class Angle(Force, simtk.openmm.HarmonicAngleForce):
 
 
 class Dihedral(Force, simtk.openmm.CustomTorsionForce):
-    def __init__(self, dna, force_group=9):
+    def __init__(self, nucleic, force_group=9):
         self.force_group = force_group
-        super().__init__(dna)
+        super().__init__(nucleic)
 
     def reset(self):
         # dihedralForce = simtk.openmm.CustomTorsionForce("""K_periodic*(1-cs)-K_gaussian*exp(-atan(tan(dt))^2/2/sigma^2);
@@ -120,7 +121,36 @@ class Dihedral(Force, simtk.openmm.CustomTorsionForce):
         self.force = dihedralForce
 
     def defineInteraction(self):
-        for i, a in self.dna.dihedrals.iterrows():
+        for i, a in self.nucleic.dihedrals.iterrows():
+            parameters = [a['K_dihedral'] * _ef,
+                          a['K_gaussian'] * _ef,
+                          a['sigma'],
+                          (180 + a['t0']) * _af]
+            particles = [a['aai'], a['aaj'], a['aak'], a['aal']]
+            self.force.addTorsion(*particles, parameters)
+
+class Dihedral(Force, simtk.openmm.CustomTorsionForce):
+    def __init__(self, nucleic, force_group=9):
+        self.force_group = force_group
+        super().__init__(nucleic)
+
+    def reset(self):
+        dihedralForce = simtk.openmm.CustomTorsionForce("""K_periodic*(1-cs)-K_gaussian*exp(-dt_periodic^2/2/sigma^2);
+                                                      cs=cos(dt);
+                                                      dt_periodic=dt-floor((dt+pi)/(2*pi))*(2*pi);
+                                                      dt=theta-t0""")
+        # Use floor function to deal with the NaN problem in atan function
+        dihedralForce.setUsesPeriodicBoundaryConditions(self.periodic)
+        dihedralForce.addPerTorsionParameter('K_periodic')
+        dihedralForce.addPerTorsionParameter('K_gaussian')
+        dihedralForce.addPerTorsionParameter('sigma')
+        dihedralForce.addPerTorsionParameter('t0')
+        dihedralForce.addGlobalParameter('pi', np.pi)
+        dihedralForce.setForceGroup(self.force_group)
+        self.force = dihedralForce
+
+    def defineInteraction(self):
+        for i, a in self.nucleic.dihedrals.iterrows():
             parameters = [a['K_dihedral'] * _ef,
                           a['K_gaussian'] * _ef,
                           a['sigma'],
@@ -129,8 +159,43 @@ class Dihedral(Force, simtk.openmm.CustomTorsionForce):
             self.force.addTorsion(*particles, parameters)
 
 
-class Dihedral(Force, simtk.openmm.CustomHbondForce):
-    def __init__(self, dna, force_group=10, OpenCLPatch=True):
+class Stacking(Force, simtk.openmm.CustomCompoundBondForce):
+    def __init__(self, nucleic, force_group=8):
+        self.force_group = force_group
+        super().__init__(nucleic)
+
+    def reset(self):
+        stackingForce = simtk.openmm.CustomCompoundBondForce(3, """rep+f2*attr;
+                                                                rep=epsilon*(1-exp(-alpha*(dr)))^2*step(-dr);
+                                                                attr=epsilon*(1-exp(-alpha*(dr)))^2*step(dr)-epsilon;
+                                                                dr=distance(p2,p3)-sigma;
+                                                                f2=max(f*pair2,pair1);
+                                                                pair1=step(dt+pi/2)*step(pi/2-dt);
+                                                                pair2=step(dt+pi)*step(pi-dt);
+                                                                f=1-cos(dt)^2;
+                                                                dt=rng*(angle(p1,p2,p3)-t0);""")
+        stackingForce.setUsesPeriodicBoundaryConditions(self.periodic)
+        stackingForce.addPerBondParameter('epsilon')
+        stackingForce.addPerBondParameter('sigma')
+        stackingForce.addPerBondParameter('t0')
+        stackingForce.addPerBondParameter('alpha')
+        stackingForce.addPerBondParameter('rng')
+        stackingForce.addGlobalParameter('pi', np.pi)
+        stackingForce.setForceGroup(self.force_group)
+        self.force = stackingForce
+
+    def defineInteraction(self):
+        for i, a in self.nucleic.stackings.iterrows():
+            parameters = [a['epsilon'] * _ef,
+                          a['sigma'] * _df,
+                          a['t0'] * _af,
+                          a['alpha'] / _df,
+                          a['rng']]
+            self.force.addBond([a['aai'], a['aaj'], a['aak']], parameters)
+
+
+class BasePair(Force, simtk.openmm.CustomHbondForce):
+    def __init__(self, nucleic, force_group=10, OpenCLPatch=True):
         self.force_group = force_group
         super().__init__(nucleic, OpenCLPatch)
 
@@ -169,21 +234,21 @@ class Dihedral(Force, simtk.openmm.CustomHbondForce):
             return pairForce
 
         basePairForces = {}
-        pair_definition = self.dna.pair_definition[self.dna.pair_definition['DNA'] == self.dna.DNAtype]
+        pair_definition = self.nucleic.pair_definition[self.nucleic.pair_definition['RNA'] == self.nucleic.na_type]
         for i, pair in pair_definition.iterrows():
             basePairForces.update({i: basePairForce()})
         self.forces = basePairForces
 
     def defineInteraction(self):
-        pair_definition = self.dna.pair_definition[self.dna.pair_definition['DNA'] == self.dna.DNAtype]
-        atoms = self.dna.atoms.copy()
+        pair_definition = self.nucleic.pair_definition[self.nucleic.pair_definition['RNA'] == self.nucleic.na_type]
+        atoms = self.nucleic.atoms.copy()
         atoms['index'] = atoms.index
         atoms.index = zip(atoms['chainID'], atoms['resSeq'], atoms['name'])
-        is_dna = atoms['resname'].isin(_dnaResidues)
+        is_rna = atoms['resname'].isin(_rnaResidues)
 
         for i, pair in pair_definition.iterrows():
-            D1 = atoms[(atoms['name'] == pair['Base1']) & is_dna].copy()
-            A1 = atoms[(atoms['name'] == pair['Base2']) & is_dna].copy()
+            D1 = atoms[(atoms['name'] == pair['Base1']) & is_rna].copy()
+            A1 = atoms[(atoms['name'] == pair['Base2']) & is_rna].copy()
 
             try:
                 D2 = atoms.loc[[(c, r, 'S') for c, r, n in D1.index]]

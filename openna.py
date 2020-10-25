@@ -177,7 +177,7 @@ class RNA(object):
         self.particle_definition = self.config['Particles']
         self.bond_definition = self.config['Bonds']
         self.angle_definition = self.config['Angles']
-        #self.dihedral_definition = self.config['Dihedrals']
+        self.dihedral_definition = self.config['Dihedrals']
         #self.stacking_definition = self.config['Base Stackings']
         #self.pair_definition = self.config['Base Pairs']
         #self.cross_definition = self.config['Cross Stackings']
@@ -251,6 +251,7 @@ class RNA(object):
 
         bond_types = self.bond_definition[self.bond_definition['nucleic'] == na_type]
         angle_types = self.angle_definition[self.angle_definition['nucleic'] == na_type]
+        dihedral_types = self.dihedral_definition[self.dihedral_definition['nucleic'] == na_type]
         # print(bond_types)
         # print(index)
         # Make a table with bonds
