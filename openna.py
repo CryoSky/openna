@@ -254,6 +254,7 @@ class RNA(object):
         dihedral_types = self.dihedral_definition[self.dihedral_definition['nucleic'] == na_type]
         # print(bond_types)
         # print(index)
+
         # Make a table with bonds
         data = []
         for i, ftype in bond_types.iterrows():
@@ -302,6 +303,29 @@ class RNA(object):
                             data += [[i, index[k1], index[k2], index[k3], index[k4], sb]]
         data = pandas.DataFrame(data, columns=['name', 'aai', 'aaj', 'aak', 'aax', 'sB'])
         self.angles = data.merge(angle_types, left_on='name', right_index=True)
+
+
+        # Make a table with dihedrals
+        data = []
+        for i, ftype in dihedral_types.iterrows():
+            # print(bond_type)
+            ai = ftype['i']
+            aj = ftype['j']
+            ak = ftype['k']
+            al = ftype['l']
+            s1 = ftype['s1']
+            s2 = ftype['s2']
+            s3 = ftype['s3']
+            for c, r in cr_list:
+                k1 = (c, r, ai)
+                k2 = (c, r + s1, aj)
+                k3 = (c, r + s2, ak)
+                k4 = (c, r + s3, al)
+                if k1 in index and k2 in index and k3 in index and k4 in index:
+                    data += [[i, index[k1], index[k2], index[k3], index[k4]]]
+        data = pandas.DataFrame(data, columns=['name', 'aai', 'aaj', 'aak', 'aal'])
+        self.dihedrals = data.merge(dihedral_types, left_on='name', right_index=True)
+
 
 # @ symbol in Python https://docs.python.org/3/reference/compound_stmts.html#index-30
 # https://docs.python.org/3/library/functions.html#staticmethod
