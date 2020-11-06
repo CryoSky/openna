@@ -178,7 +178,7 @@ class RNA(object):
         self.bond_definition = self.config['Bonds']
         self.angle_definition = self.config['Angles']
         self.dihedral_definition = self.config['Dihedrals']
-        #self.stacking_definition = self.config['Base Stackings']
+        self.stacking_definition = self.config['Base Stackings']
         #self.pair_definition = self.config['Base Pairs']
         #self.cross_definition = self.config['Cross Stackings']
 
@@ -252,6 +252,8 @@ class RNA(object):
         bond_types = self.bond_definition[self.bond_definition['nucleic'] == na_type]
         angle_types = self.angle_definition[self.angle_definition['nucleic'] == na_type]
         dihedral_types = self.dihedral_definition[self.dihedral_definition['nucleic'] == na_type]
+        stacking_types = self.stacking_definition[self.stacking_definition['nucleic'] == na_type]
+                
         # print(bond_types)
         # print(index)
 
@@ -326,6 +328,24 @@ class RNA(object):
         data = pandas.DataFrame(data, columns=['name', 'aai', 'aaj', 'aak', 'aal'])
         self.dihedrals = data.merge(dihedral_types, left_on='name', right_index=True)
 
+        # Make a table with stackings
+        data = []
+        for i, ftype in stacking_types.iterrows():
+            # print(bond_type)
+            ai = ftype['i']
+            aj = ftype['j']
+            ak = ftype['k']
+            s1 = ftype['s1']
+            s2 = ftype['s2']
+            for c, r in cr_list:
+                k1 = (c, r, ai)
+                k2 = (c, r + s1, aj)
+                k3 = (c, r + s2, ak)
+                if k1 in index and k2 in index and k3 in index:
+                    data += [[i, index[k1], index[k2], index[k3]]]
+        data = pandas.DataFrame(data, columns=['name', 'aai', 'aaj', 'aak'])
+        self.stackings = data.merge(stacking_types, left_on='name', right_index=True)
+
 
 # @ symbol in Python https://docs.python.org/3/reference/compound_stmts.html#index-30
 # https://docs.python.org/3/library/functions.html#staticmethod
@@ -351,8 +371,8 @@ class RNA(object):
                         x=float(line[30:38]),
                         y=float(line[38:46]),
                         z=float(line[46:54]),
-                        occupancy=0.0 if line[54:60].strip() == '' else float(line[54:60]),
-                        tempFactor=0.0 if line[60:66].strip() == '' else float(line[60:66]),
+                        occupancy=1.0 if line[54:60].strip() == '' else float(line[54:60]),
+                        tempFactor=1.0 if line[60:66].strip() == '' else float(line[60:66]),
                         element=str(line[76:78]).strip(),
                         charge=str(line[78:80]).strip())
 

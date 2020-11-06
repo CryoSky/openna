@@ -125,7 +125,7 @@ class Dihedral(Force, simtk.openmm.CustomTorsionForce):
             self.force.addTorsion(*particles, parameters)
 
 
-class Stacking(Force, simtk.openmm.CustomCompoundBondForce):
+class BaseStacking(Force, simtk.openmm.CustomCompoundBondForce):
     def __init__(self, nucleic, force_group=8):
         self.force_group = force_group
         super().__init__(nucleic)
