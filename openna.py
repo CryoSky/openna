@@ -3,11 +3,12 @@
 This module implements a coarse-grained forcefield in openMM.
 It also contains Protein-RNA interaction potentials to be used with openAWSEM.
 All code are written in Python3.
+https://google.github.io/styleguide/pyguide.html
 """
 
 __author__ = 'Shikai Jin'
 __version__ = '0.1.0'
-__date__ = "Oct-14-2020"
+__date__ = "Nov-08-2020"
 
 import simtk.openmm.app
 import simtk.openmm
@@ -124,7 +125,7 @@ def fixPDB(pdb_file):
 
 
 def writeAfterFixer(fixer):
-    """Write the PDB file after pdbfixer."""
+    """Write the PDB file after running of the pdbfixer."""
     simtk.openmm.app.PDBFile.writeFile(fixer.topology, fixer.positions, open('fixer_output.pdb', 'w'))
 
 
@@ -179,7 +180,7 @@ class RNA(object):
         self.angle_definition = self.config['Angles']
         self.dihedral_definition = self.config['Dihedrals']
         self.stacking_definition = self.config['Base Stackings']
-        #self.pair_definition = self.config['Base Pairs']
+        self.pair_definition = self.config['Base Pairs']
         #self.cross_definition = self.config['Cross Stackings']
 
     def getSequences(self):
